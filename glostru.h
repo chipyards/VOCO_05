@@ -29,7 +29,8 @@ GtkWidget *     bqui;
 
 gpanel panneau1;
 gzoombar zbar1;
-int ilayout;
+
+int idle_id;	// id pour la fonction idle du timeout
 
 } glostru;
 

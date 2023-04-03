@@ -1,11 +1,13 @@
 # directories
-GTKBASE= F:/Appli/msys64/mingw32
+# GTKBASE= F:/Appli/msys64/mingw32
+# on ne depend plus d'un F: absolu, mais on doit compiler avec le shell mingw32
+GTKBASE= /mingw32
 
 # listes
-SOURCESC=
-SOURCESCPP= jluplot.cpp gluplot.cpp layers.cpp jdsp.cpp appli.cpp
-HEADERS= glostru.h jdsp.h jluplot.h gluplot.h layers.h
-EXE= jluplot.exe
+SOURCESC= modpop3.c
+SOURCESCPP= jluplot.cpp gluplot.cpp jdsp.cpp appli.cpp
+HEADERS= glostru.h jdsp.h jluplot.h gluplot.h layer_u.h modpop3.h cli_parse.h
+EXE= voco.exe
 
 OBJS= $(SOURCESC:.c=.o) $(SOURCESCPP:.cpp=.o)
 
@@ -28,12 +30,13 @@ LIBS= -L$(GTKBASE)/lib \
 # enlever -mwindows pour avoir la console stdout
 
 # INCS= `pkg-config --cflags gtk+-2.0` -mms-bitfields
-INCS= -mms-bitfields \
+INCS= -Wall -Wno-parentheses -Wno-deprecated-declarations -O2 -mms-bitfields \
 -I$(GTKBASE)/include/atk-1.0 \
 -I$(GTKBASE)/include/cairo \
 -I$(GTKBASE)/include/gdk-pixbuf-2.0 \
 -I$(GTKBASE)/include/glib-2.0 \
 -I$(GTKBASE)/include/gtk-2.0 \
+-I$(GTKBASE)/include/harfbuzz \
 -I$(GTKBASE)/include/pango-1.0 \
 -I$(GTKBASE)/lib/glib-2.0/include \
 -I$(GTKBASE)/lib/gtk-2.0/include \
@@ -45,7 +48,7 @@ ALL : $(OBJS)
 	g++ -o $(EXE) $(OBJS) $(LIBS)
 
 clean : 
-	del *.o
+	rm *.o
 
 .cpp.o: 
 	g++ $(INCS) -c $<
@@ -57,6 +60,5 @@ clean :
 
 jluplot.o : ${HEADERS}
 gluplot.o : ${HEADERS}
-layers.o : ${HEADERS}
 jdsp.o : ${HEADERS}
 appli.o : ${HEADERS}

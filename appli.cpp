@@ -18,6 +18,7 @@ using namespace std;
 #include "modpop3.h"
 #include "cli_parse.h"
 #include "glostru.h"
+#include "generator.h"
 #include "jdsp.h"
 
 // unique variable globale exportee pour gasp() de modpop3
@@ -33,41 +34,45 @@ static layer_u<float> demowave[QWAVES];	// wave type float a pas uniforme
 
 // ce jdsp est l'objet singleton de cette appli
 static jdsp jd;
+// ce generator aussi
+static wgen gen;
 
 // parametrer le jdsp en fonction des arguments de CLI
 void param_simu( int argc, char ** argv )
 {
-jd.defaults();
-
 printf("usage : jluplot <Fc(Hz)> <noise> <tf> <rect decay> <ripple_filter_ratio>\n");
 
 double val;
+gen.Fs = jd.Fs;
+gen.f0 = jd.f0;
+
 if	( argc > 1 )
 	{
 	val = strtod( argv[1], NULL );
 	if	( val > 30.0 )
 		{
-		jd.f0 = val;	// durees d'abord exprimees en periodes de Fc
-		jd.t0 = (int)( ( 1.75 / jd.f0 ) * jd.Fs );
-		jd.t1 = (int)( ( 32.0 / jd.f0 ) * jd.Fs );
-		jd.t2 = (int)( ( 24.0 / jd.f0 ) * jd.Fs );
+		jd.f0 = val;	// durees d'abord exprimees en periodes de f0
+		gen.f0 = jd.f0;
+		gen.t0 = (int)( ( 1.75 / jd.f0 ) * jd.Fs );
+		gen.t1 = (int)( ( 32.0 / jd.f0 ) * jd.Fs );
+		gen.t2 = (int)( ( 24.0 / jd.f0 ) * jd.Fs );
 		}
 	}
 if	( argc > 2 )
 	{				// val est sans dimension
 	val = strtod( argv[2], NULL );
-	jd.knoise = val;
+	gen.knoise = val;
 	}
 if	( argc > 3 )
 	{
 	int tmin;
 	val = strtod( argv[3], NULL );
-	jd.tf = (int)(val * jd.Fs / jd.f0 );
-	tmin = ( 4 * jd.tf ) / 3;
-	if	( jd.t1 < tmin )
+	gen.tf = (int)(val * jd.Fs / jd.f0 );
+	tmin = ( 4 * gen.tf ) / 3;
+	if	( gen.t1 < tmin )
 		{
-		jd.t1 = tmin;
-		jd.t2 = jd.t1;
+		gen.t1 = tmin;
+		gen.t2 = gen.t1;
 		}
 	}
 if	( argc > 4 )
@@ -86,10 +91,10 @@ printf("freq. ech. fs = %g Hz\n", jd.Fs );
 printf("Async rectifier :\n  rect-decay = %g unit/sample\n", jd.rect_decay );
 printf("  ripple filter ratio = %g\n", jd.rfr );
 printf("Syn demodulator low pass:\n  kflp = %g\n", jd.kflp );
-printf("Signal generator :\n  bruit/sin = %g\n", jd.knoise );
-printf("  Facteur de serie de progression de frequence = %g\n", jd.kdf );
-printf("  Duree de salve = %g periodes de fc\n", jd.t1 * jd.f0 / jd.Fs );
-printf("  Temps de montee et descente = %g periodes de fc\n\n", jd.tf * jd.f0 / jd.Fs );
+printf("Signal generator :\n  bruit/sin = %g\n", gen.knoise );
+printf("  Facteur de serie de progression de frequence = %g\n", gen.kdf );
+printf("  Duree de salve = %g periodes de fc\n", gen.t1 * gen.f0 / gen.Fs );
+printf("  Temps de montee et descente = %g periodes de fc\n\n", gen.tf * gen.f0 / gen.Fs );
 fflush( stdout );
 }
 
@@ -97,13 +102,12 @@ fflush( stdout );
 void run_simu()
 {
 // preparation des waves pour jluplot
-// le tableau de pointeurs c'est pour le confort...
+// d'abord evaluer la taille
+int qsamples = gen.calc_size();
+// allouer la memoire
 layer_u<float> * w[QWAVES];
-int tpu, qsamples;
-int iw;
-tpu = jd.t0 + jd.t1 + jd.t2;
-qsamples = tpu * jd.qpu;
-for	( iw = 0; iw < QWAVES; ++iw )
+
+for	( int iw = 0; iw < QWAVES; ++iw )
 	{
 	w[iw] = &demowave[iw];
 	w[iw]->V = (float *)malloc( qsamples * sizeof(float) );
@@ -115,60 +119,21 @@ for	( iw = 0; iw < QWAVES; ++iw )
 		}
 	}
 printf("allocated %d * %d samples\n", QWAVES, w[0]->qu );
-// preparation de la simu
-int i, imod;
-double phase;
-double gen_env;		// enveloppe pour generateur
-double gen_sig;		// signal genere
-double ripp_out;	// sortie du ripple filter
-double demod_out;	// sortie du demodulateur synchrone
-// initialiser les composants du jdsp
-jd.init();
-// intialiser le generateur
-phase = 0.0;
 
-// boucle de calcul (generation signaux et DSP dans la meme boucle)
-for	( i = 0; i < w[0]->qu; ++i )
+// actionner le generateur
+gen.f0 = jd.f0;
+gen.generate( w[0]->V );
+
+// initialiser les composants du jdsp
+jd.update();
+
+// boucle de calcul DSP
+for	( int i = 0; i < w[0]->qu; ++i )
 	{
-	// generation enveloppe d'une pulse periodique, periode tpu samples
-	imod = i % tpu;
-	if	( imod < jd.t0 )
-		gen_env = 0.0;
-	else if	( imod < ( jd.t0 + jd.tf ) )
-		gen_env = (double)( imod - jd.t0 ) / (double)jd.tf;
-	else if	( imod < ( jd.t0 + jd.t1 ) )
-		gen_env = 1.0;
-	else if	( imod < ( jd.t0 + jd.t1 + jd.tf ) )
-		gen_env = (double)( jd.t0 + jd.t1 + jd.tf - imod ) / (double)jd.tf;
-	else	gen_env = 0.0;
-	// generation signal
-	if	( imod == 0 )
-		{
-		switch	( i / tpu )
-			{
-			case 0 : jd.f = jd.f0 / jd.kdf;	break;
-			case 1 : jd.f = jd.f0;		break;
-			case 2 : jd.f = jd.f0 * jd.kdf;	break;
-			}
-		// convertir la frequence en rad/sample
-		jd.w = ( M_PI * 2.0 ) * jd.f / jd.Fs;
-		}
-	gen_sig = gen_env * cos( phase );
-	phase += jd.w;
-	if	( phase > ( M_PI * 2.0 ) )
-		phase -= ( M_PI * 2.0 );
-	if	( jd.knoise > 0.0 )
-		{
-		gen_sig += jd.knoise * ( ( 2.0 * (double)rand() / (double)RAND_MAX ) - 1.0 );
-		}
-	// analyse
-	ripp_out  = jd.canal_step( gen_sig ) * 1.6;	// normalisation empirique (depend de rect. decay)
-	demod_out = jd.demod_step( gen_sig ) * 2.0;	// normalisation theorique
-	// stockage valeurs pour plot
-	w[0]->V[i] = (float)gen_sig;
-	w[2]->V[i] = (float)demod_out;
-	w[3]->V[i] = (float)ripp_out;
+	w[3]->V[i] = jd.canal_step( w[0]->V[i] ) * 1.6;	// normalisation empirique (depend de rect. decay)
+	w[2]->V[i] = jd.demod_step( w[0]->V[i] ) * 2.0;	// normalisation theorique
 	}
+
 printf("simulation done\n"); fflush(stdout);
 // preparation plot
 w[0]->scan();

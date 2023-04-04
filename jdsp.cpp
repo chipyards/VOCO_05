@@ -157,29 +157,9 @@ return sqrt( Reel * Reel + Img * Img );
 
 /** ============================= la classe jdsp ======================== **/
 
-void jdsp::defaults()
-{
-// environnement
-Fs = 48000.0;	// Hz	// frequence d'echantillonnage
-f0 = 500.0;	// Hz
-// config enveloppe follower
-rect_decay = 0.4;	// rectifier hold decay en 1/sample
-rfr = 2.0;		// ripple filter ratio = Fc / Fripp
-// config demod synchrone
-kflp = pow( 2.0, 1/6.0 ) - 1.0;	// demi tiers d'octave
-// kflp = 0.03;	// quart de ton
-// testbench pour enveloppe follower
-t0 = 1000;
-t1 = 4000;
-t2 = t1;
-tf = 100;
-qpu = 3;
-kdf = pow( 2.0, 1/3.0 );	// pow( 2.0, 1/6.0 ) = demi-tiers d'octave
-knoise = 0.0;
-}
 
 // mise a jour des parametres deduits
-void jdsp::init()
+void jdsp::update()
 {
 canal.init( f0 / Fs, rect_decay, rfr );
 demod.init( f0 / Fs, f0 * kflp / Fs );

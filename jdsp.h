@@ -70,21 +70,20 @@ double rfr;		// ripple filter ratio = Fc / Fripp
 // canaux de demodulateur synchrone (un seul en fait)
 double kflp;		// frequ de coupure low-pass relative a f0
 demod4 demod;
-// testbench : generation de salves d'enveloppe trapezoidale
-double f;	// Hz, frequence courante
-double kdf;	// saut relatif de frequence (> 1.0)
-double w;	// rad/sample, frequence courante rellement utilisee
-double knoise;	// proportion de bruit
-int t0;		// duree silence initial en samples
-int t1;		// duree salve			"	(fade-in inclus)
-int t2;		// duree silence final		"	(fade-out inclus)
-int tf;		// duree fade-in et fade_out	"
-		// periode des pulses		"	= t0+t1+t2 pour info
-int qpu;	// nombre de pulses
-
-// methodes
-void defaults();	// pre-constructeur
-void init();	// mise a jour des parametres deduits
+// constructeur
+jdsp() {
+	// environnement
+	Fs = 48000.0;	// Hz	// frequence d'echantillonnage
+	f0 = 500.0;	// Hz
+	// config enveloppe follower
+	rect_decay = 0.4;	// rectifier hold decay en 1/sample
+	rfr = 2.0;		// ripple filter ratio = Fc / Fripp
+	// config demod synchrone
+	kflp = pow( 2.0, 1/6.0 ) - 1.0;	// demi tiers d'octave
+	// kflp = 0.03;	// quart de ton
+	}
+// methodes : parametres
+void update();	// mise a jour des parametres deduits
 // methodes : traiter 1 echantillon
 double canal_step( double X ) {
 	return canal.step(X);

@@ -6,7 +6,7 @@ GTKBASE= /mingw32
 # listes
 SOURCESC= modpop3.c
 SOURCESCPP= jluplot.cpp gluplot.cpp jdsp.cpp appli.cpp
-HEADERS= glostru.h jdsp.h jluplot.h gluplot.h layer_u.h modpop3.h cli_parse.h
+HEADERS= glostru.h jdsp.h jluplot.h gluplot.h layer_u.h modpop3.h cli_parse.h generator.h
 EXE= voco.exe
 
 OBJS= $(SOURCESC:.c=.o) $(SOURCESCPP:.cpp=.o)

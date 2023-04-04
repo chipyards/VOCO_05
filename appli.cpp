@@ -40,61 +40,21 @@ static wgen gen;
 // parametrer le jdsp en fonction des arguments de CLI
 void param_simu( int argc, char ** argv )
 {
-printf("usage : jluplot <Fc(Hz)> <noise> <tf> <rect decay> <ripple_filter_ratio>\n");
+printf("usage : \n");
 
 double val;
 gen.Fs = jd.Fs;
 gen.f0 = jd.f0;
 
-if	( argc > 1 )
-	{
-	val = strtod( argv[1], NULL );
-	if	( val > 30.0 )
-		{
-		jd.f0 = val;	// durees d'abord exprimees en periodes de f0
-		gen.f0 = jd.f0;
-		gen.t0 = (int)( ( 1.75 / jd.f0 ) * jd.Fs );
-		gen.t1 = (int)( ( 32.0 / jd.f0 ) * jd.Fs );
-		gen.t2 = (int)( ( 24.0 / jd.f0 ) * jd.Fs );
-		}
-	}
-if	( argc > 2 )
-	{				// val est sans dimension
-	val = strtod( argv[2], NULL );
-	gen.knoise = val;
-	}
-if	( argc > 3 )
-	{
-	int tmin;
-	val = strtod( argv[3], NULL );
-	gen.tf = (int)(val * jd.Fs / jd.f0 );
-	tmin = ( 4 * gen.tf ) / 3;
-	if	( gen.t1 < tmin )
-		{
-		gen.t1 = tmin;
-		gen.t2 = gen.t1;
-		}
-	}
-if	( argc > 4 )
-	{
-	val = strtod( argv[4], NULL );	// en unites par sample
-	if	( val > 0.0 )
-		jd.rect_decay = val;
-	}
-if	( argc > 5 )
-	{
-	val = strtod( argv[5], NULL );	// sans dimension
-	jd.rfr = val;
-	}
-printf("\nfreq. centrale fc = %g Hz\n", jd.f0 );
+printf("\nfreq. centrale f0 = %g Hz\n", jd.f0 );
 printf("freq. ech. fs = %g Hz\n", jd.Fs );
 printf("Async rectifier :\n  rect-decay = %g unit/sample\n", jd.rect_decay );
 printf("  ripple filter ratio = %g\n", jd.rfr );
 printf("Syn demodulator low pass:\n  kflp = %g\n", jd.kflp );
 printf("Signal generator :\n  bruit/sin = %g\n", gen.knoise );
 printf("  Facteur de serie de progression de frequence = %g\n", gen.kdf );
-printf("  Duree de salve = %g periodes de fc\n", gen.t1 * gen.f0 / gen.Fs );
-printf("  Temps de montee et descente = %g periodes de fc\n\n", gen.tf * gen.f0 / gen.Fs );
+printf("  Duree de salve = %d periodes de f0\n", gen.tpu );
+printf("  Temps de montee et descente = %d periodes de f0\n\n", gen.trtf );
 fflush( stdout );
 }
 

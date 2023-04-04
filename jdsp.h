@@ -81,7 +81,7 @@ jdsp() {
 	// config demod synchrone
 	kflp = pow( 2.0, 1/6.0 ) - 1.0;	// demi tiers d'octave
 	// kflp = 0.03;	// quart de ton
-	}
+	};
 // methodes : parametres
 void update();	// mise a jour des parametres deduits
 // methodes : traiter 1 echantillon

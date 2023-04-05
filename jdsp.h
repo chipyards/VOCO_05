@@ -14,6 +14,40 @@ Recentrage de la reponse a -3dB
 - posons fa = f0d * (1 - kflp) et fb = f0d * (1 + kflp), il vient
   kflp = ( K6*K6 - 1 ) / ( K6*K6 + 1 ) = ( K3 - 1 ) / ( K3 + 1 ) soit : kflp = 0.115013
 */
+
+// filtre du 2e ordre = biquad
+class filt2 {
+public :
+// parametres
+double aKc;	// traduction fc en rad/sample
+double aD;	// traduction Q
+// variables signal (persistantes)
+double acc1a;
+double acc2a;
+// methodes : initialisations
+void initLP( double rel_fc );
+// methodes : traiter 1 echantillon
+double LP_step( double X );
+};
+
+// filtre du 3e ordre (1 biquad + RC)
+class filt3 {
+public :
+// parametres
+double aKc;	// traduction fc en rad/sample
+double bKc;	// traduction fc en rad/sample
+double aD;	// traduction Q
+double gain;
+// variables signal (persistantes)
+double acc1a;
+double acc2a;
+double acc1b;
+// methodes : initialisations
+void initLP( double rel_fc );
+// methodes : traiter 1 echantillon
+double LP_step( double X );
+};
+
 // filtre du 4e ordre (2 biquads a et b)
 class filt4 {
 public :
@@ -61,8 +95,12 @@ public :
 double k;	// frequence en rad/sample
 double phase;	// phase courante
 // filtres passe-bas
-filt4 LPr;
-filt4 LPi;
+//filt4 LPr;
+//filt4 LPi;
+filt3 LPr;
+filt3 LPi;
+//filt2 LPr;
+//filt2 LPi;
 // methode init
 void init( double rel_fo, double rel_flp );
 // methode : traiter un echantillon par demodulateur synchrone

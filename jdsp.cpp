@@ -2,7 +2,67 @@
 #include <math.h>
 #include "jdsp.h"
 
-/** ============================= la classe filt4 ======================== **/
+/** ============================= les classes filt2, 3, 4 ================ **/
+
+// init des parametres pour filtre passe-bas Butterworth
+// rel_fc = fc / Fs (i.e. en turn/sample)
+void filt2::initLP( double rel_fc )
+{
+// 1/Q = -2cos( pi * ( 2k + n - 1 ) / 2n avec n = ordre et k variant de 1 a n/2
+aD = -2.0 * cos( M_PI * ( 3.0 / 4.0 ) );	// sqrt(2) !
+aKc = ( 2.0 * M_PI * rel_fc );
+// init accus
+acc1a = 0.0;
+acc2a = 0.0;
+}
+
+// traiter 1 echantillon par filtre passe-bas 2eme ordre
+double filt2::LP_step( double X )
+{
+double aYlp, aYbp, aYhp;
+// biquad "a"
+aYlp = acc1a + aKc * acc2a;
+aYhp = X - aD * acc2a - aYlp;
+aYbp = acc2a + aKc * aYhp;
+// sampling
+acc1a = aYlp;
+acc2a = aYbp;
+// output
+return aYlp;
+}
+
+// init des parametres pour filtre passe-bas Butterworth
+// rel_fc = fc / Fs (i.e. en turn/sample)
+void filt3::initLP( double rel_fc )
+{
+// 1/Q = -2cos( pi * ( 2k + n - 1 ) / 2n avec n = ordre et k variant de 1 a n/2
+aD = -2.0 * cos( M_PI * ( 4.0 / 6.0 ) );	// 1.0 !
+aKc = ( 2.0 * M_PI * rel_fc );
+bKc = ( 2.0 * M_PI * rel_fc );
+gain = 1.0;
+// init accus
+acc1a = 0.0;
+acc2a = 0.0;
+acc1b = 0.0;
+}
+
+// traiter 1 echantillon par filtre passe-bas 2eme ordre
+double filt3::LP_step( double X )
+{
+double aYlp, aYbp, aYhp, bYlp, bYhp;
+// biquad "a"
+aYlp = acc1a + aKc * acc2a;
+aYhp = X - aD * acc2a - aYlp;
+aYbp = acc2a + aKc * aYhp;
+bYlp = bKc * acc1b;
+bYhp = aYlp - bYlp;
+// sampling
+acc1a = aYlp;
+acc2a = aYbp;
+acc1b += bYhp;
+// output
+return bYlp;
+}
 
 // init des parametres pour filtre passe-bande tiers d'octave
 // rel_fc = fc / Fs (i.e. en turn/sample)

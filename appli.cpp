@@ -47,21 +47,43 @@ Filter-Rectifier Demodulator:\n\
   -r <ripple filter cutoff ratio> (%g * f)\n\
 Synchronous Demodulator:\n\
   -L <LP filter cutoff> (%g * f)\n\
-Signal Source:\n\
+Signal Source Mode:\n\
+  -M <mode : c (chirps) or s (steps)> (%s)\n";
+
+const char * options_c = "\
+Signal Source in Chirps mode:\n\
   -N <number of chirps on each side of f> (%d)\n\
   -k <frequency spacing factor> (%g)\n\
   -d <chirp duration> (%d f-periods)\n\
   -t <rise and fall time> (%d f-periods)\n\
-  -n <noise relative amount> (%g)\n\
+  -n <noise relative amount> (%g)\n";
+
+const char * options_s = "\
+Signal Source in Steps mode:\n\
+  -N <number of steps on each side of f> (%d)\n\
+  -S <number of steps per octave> (%d)\n\
+  -d <step duration> (%d f-periods)\n\
+  -n <noise relative amount> (%g)\n";
+
+const char * notes = "\
 Notes about bandwidths:\n\
   * third of octave is 1.25992, sixth of octave is 1.122462\n\
   * Filter-Rectifier Demodulator has 4th order BP filter,\n\
     third of octave bandwidth (Q=7.7 for each biquad)\n\
-  * Sync Demodulator has 4th order Butterworth LP filter\n";
+  * Sync Demodulator has 3rd order Butterworth LP filter\n";
 
-static void param_dump()
+static void param_dump( char mode )
 {
-printf( usage, jd.Fs, jd.f0, jd.rect_decay, jd.krif, jd.kflp, gen.qpu, gen.kdf, gen.tpu, gen.trtf, gen.knoise );
+const char * mode_str = "";
+if	( gen.mode == 'c' ) mode_str = "chirps"; 
+if	( gen.mode == 's' ) mode_str = "steps"; 
+printf( usage, jd.Fs, jd.f0, jd.rect_decay, jd.krif, jd.kflp, mode_str );
+if	( mode != 's' )
+	printf( options_c, gen.qpu, gen.kdf, gen.tpu, gen.trtf, gen.knoise );
+if	( mode != 'c' )
+	printf( options_s, gen.qstep, gen.spo, gen.tstep, gen.knoise );
+if	( mode == 'h' )
+	printf( notes );
 fflush( stdout );
 }
 
@@ -69,7 +91,7 @@ fflush( stdout );
 static void param_input( int argc, char ** argv )
 {
 // 	parsing CLI arguments
-cli_parse * lepar = new cli_parse( argc, (const char **)argv, "FfRrLNkdtn" );
+cli_parse * lepar = new cli_parse( argc, (const char **)argv, "FfRrLNkdtnMS" );
 // parsing is done, retrieve the args
 const char * val;
 
@@ -79,18 +101,31 @@ if ( ( val = lepar->get('R') ) ) jd.rect_decay = strtod( val, NULL );
 if ( ( val = lepar->get('r') ) ) jd.krif = strtod( val, NULL ); 
 if ( ( val = lepar->get('L') ) ) jd.kflp = strtod( val, NULL ); 
 
-if ( ( val = lepar->get('N') ) ) gen.qpu = atoi( val ); 
-if ( ( val = lepar->get('k') ) ) gen.kdf = strtod( val, NULL ); 
-if ( ( val = lepar->get('d') ) ) gen.tpu = atoi( val ); 
-if ( ( val = lepar->get('t') ) ) gen.trtf = atoi( val ); 
-if ( ( val = lepar->get('n') ) ) gen.knoise = strtod( val, NULL );
+if ( ( val = lepar->get('M') ) ) gen.mode = val[0]; 
 
-if	( lepar->get('h') || lepar->get('@') )
-	{ param_dump(); exit(0); }
+if	( gen.mode == 'c' )
+	{
+	if ( ( val = lepar->get('N') ) ) gen.qpu = atoi( val ); 
+	if ( ( val = lepar->get('k') ) ) gen.kdf = strtod( val, NULL ); 
+	if ( ( val = lepar->get('d') ) ) gen.tpu = atoi( val ); 
+	if ( ( val = lepar->get('t') ) ) gen.trtf = atoi( val ); 
+	if ( ( val = lepar->get('n') ) ) gen.knoise = strtod( val, NULL );
+	}
+else if	( gen.mode == 's' )
+	{
+	if ( ( val = lepar->get('N') ) ) gen.qstep = atoi( val ); 
+	if ( ( val = lepar->get('S') ) ) gen.spo = atoi( val ); 
+	if ( ( val = lepar->get('d') ) ) gen.tstep = atoi( val ); 
+	if ( ( val = lepar->get('n') ) ) gen.knoise = strtod( val, NULL );
+	}
+else	gen.mode = 'h';
+
+if	( lepar->get('h') || lepar->get('@') || ( gen.mode == 'h' ) )
+	{ param_dump('h'); exit(0); }
 
 gen.Fs = jd.Fs;
 gen.f0 = jd.f0;
-param_dump();
+param_dump( gen.mode );
 }
 
 /* ============================ ACTION ======================= */

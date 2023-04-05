@@ -37,12 +37,12 @@ int _ppu; 	// periode des chirps, exprimee en Ts
 wgen() {
 	Fs = 48000.0;
 	f0 = 500.0;
-	kdf = pow( 2.0, 1/3.0 );	// tiers d'octave
+	kdf = SIXIEME_OCTAVE;	// pow( 2.0, 1/6.0 );
 	knoise = 0.0;
 	// durees exprimees en periodes T0 = 1/f0
 	tpu = 42;
 	trtf = 1;
-	qpu = 1;
+	qpu = 2;
 	qsamples = 0;
 	};
 int calc_size() {

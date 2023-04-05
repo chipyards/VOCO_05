@@ -18,8 +18,8 @@ using namespace std;
 #include "modpop3.h"
 #include "cli_parse.h"
 #include "glostru.h"
-#include "generator.h"
 #include "jdsp.h"
+#include "generator.h"
 
 // unique variable globale exportee pour gasp() de modpop3
 GtkWindow * global_main_window = NULL;

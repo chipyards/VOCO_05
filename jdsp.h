@@ -1,4 +1,19 @@
+// constantes
+#define TIERS_OCTAVE	1.2599210499
+#define SIXIEME_OCTAVE	1.1224620483
+#define DEMOD_RECENTER
 
+/*
+Recentrage de la reponse a -3dB
+- soient fa et fb les frequences de coupure a -3dB
+- la frequence centrale du filtre passe bande analog est f0 = sqrt( fa * fb ) (moyenne geometrique)
+- la frequence porteuse du demodulateur est f0d = 0.5 * ( fa + fb ) (mediane)
+  elle est donc legerement decalee
+- posons fa = f0 / K6 et fb = f0 * K6 avec K6 = pow( 2, 1/6 ) = SIXIEME_OCTAVE dans notre cas
+  alors f0d = 0.5 * ( 1/K6 + K6 ) * f0 soit :				f0d = 1.00668 * f0
+- posons fa = f0d * (1 - kflp) et fb = f0d * (1 + kflp), il vient
+  kflp = ( K6*K6 - 1 ) / ( K6*K6 + 1 ) = ( K3 - 1 ) / ( K3 + 1 ) soit : kflp = 0.115013
+*/
 // filtre du 4e ordre (2 biquads a et b)
 class filt4 {
 public :
@@ -68,6 +83,7 @@ canal4 canal;
 double rect_decay;	// rectifier hold decay en 1/sample
 double krif;		// frequ de coupure low-pass relative a f0
 // canaux de demodulateur synchrone (un seul en fait)
+double f0d;		// frequence porteuse corrigee pour demod.
 double kflp;		// frequ de coupure low-pass relative a f0
 demod4 demod;
 // constructeur
@@ -79,11 +95,23 @@ jdsp() {
 	rect_decay = 0.4;	// rectifier hold decay en 1/sample
 	krif = 0.5;		// ripple filter ratio
 	// config demod synchrone
-	kflp = pow( 2.0, 1/6.0 ) - 1.0;	// demi tiers d'octave
-	// kflp = 0.03;	// quart de ton
+	#ifdef DEMOD_RECENTER
+		kflp = ( TIERS_OCTAVE - 1 ) / ( TIERS_OCTAVE + 1 );
+	#else
+		kflp = SIXIEME_OCTAVE - 1.0;	// demi tiers d'octave (naif)
+	#endif
 	};
 // methodes : parametres
-void update();	// mise a jour des parametres deduits
+void update() {			// mise a jour des parametres deduits
+	#ifdef DEMOD_RECENTER
+	// frequence corrigee pour recentrage reponse demod.
+		f0d = f0 * 0.5 * ( SIXIEME_OCTAVE + ( 1.0 / SIXIEME_OCTAVE ) );
+	#else
+		f0d = f0;
+	#endif
+	canal.init( f0 / Fs, rect_decay, krif );
+	demod.init( f0d / Fs, ( f0d / Fs ) * kflp  );
+	};
 // methodes : traiter 1 echantillon
 double canal_step( double X ) {
 	return canal.step(X);

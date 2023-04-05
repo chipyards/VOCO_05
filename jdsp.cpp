@@ -154,13 +154,3 @@ Img  = LPi.LP_step( Img );
 // module
 return sqrt( Reel * Reel + Img * Img );
 }
-
-/** ============================= la classe jdsp ======================== **/
-
-
-// mise a jour des parametres deduits
-void jdsp::update()
-{
-canal.init( f0 / Fs, rect_decay, krif );
-demod.init( f0 / Fs, f0 * kflp / Fs );
-}

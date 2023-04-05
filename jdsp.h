@@ -34,7 +34,7 @@ filt4 LP;
 double peak;		// dernier max de la valeur redressee
 double rect_out;	// sortie redresseur et hold a decay lineaire
 // methode init
-void init( double rel_fc, double rect_decay, double rfr );
+void init( double rel_fc, double rect_decay, double krif );
 // methode : traiter un echantillon par filtre passe-bande + enveloppe follower
 double step( double X );
 };
@@ -66,7 +66,7 @@ double f0;		// frequence centrale Hz
 canal4 canal;
 // config enveloppe follower
 double rect_decay;	// rectifier hold decay en 1/sample
-double rfr;		// ripple filter ratio = Fc / Fripp
+double krif;		// frequ de coupure low-pass relative a f0
 // canaux de demodulateur synchrone (un seul en fait)
 double kflp;		// frequ de coupure low-pass relative a f0
 demod4 demod;
@@ -77,7 +77,7 @@ jdsp() {
 	f0 = 500.0;	// Hz
 	// config enveloppe follower
 	rect_decay = 0.4;	// rectifier hold decay en 1/sample
-	rfr = 2.0;		// ripple filter ratio = Fc / Fripp
+	krif = 0.5;		// ripple filter ratio
 	// config demod synchrone
 	kflp = pow( 2.0, 1/6.0 ) - 1.0;	// demi tiers d'octave
 	// kflp = 0.03;	// quart de ton

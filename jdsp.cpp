@@ -86,15 +86,15 @@ return bYlp * gain;
 // init des parametres pour un canal d'analyse
 //	rel_fc en turn/sample
 //	rect_decay en unit/sample
-//	rfr sans dimension
-void canal4::init( double rel_fc, double rect_decay, double rfr )
+//	krif sans dimension
+void canal4::init( double rel_fc, double rect_decay, double krif )
 {
 // filtre passe-bande
 BP.initBP( rel_fc );
 // enveloppe follower
 this->rect_decay = rect_decay;	// decroissance lineaire du hold apres redresseur
 // filtre passe-bas "ripple filter"
-LP.initLP( rel_fc / rfr );
+LP.initLP( rel_fc * krif );
 // variables signal persistant
 peak = 0.0;
 rect_out = 0.0;
@@ -161,6 +161,6 @@ return sqrt( Reel * Reel + Img * Img );
 // mise a jour des parametres deduits
 void jdsp::update()
 {
-canal.init( f0 / Fs, rect_decay, rfr );
+canal.init( f0 / Fs, rect_decay, krif );
 demod.init( f0 / Fs, f0 * kflp / Fs );
 }

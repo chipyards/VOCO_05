@@ -27,9 +27,9 @@ GtkWindow * global_main_window = NULL;
 // le contexte de l'appli
 static glostru theglo;
 
-/** ============================ DATA source ======================= */
+/* ============================ static DATA ======================= */
 
-#define QWAVES 4
+#define QWAVES 3
 static layer_u<float> demowave[QWAVES];	// wave type float a pas uniforme
 
 // ce jdsp est l'objet singleton de cette appli
@@ -37,26 +37,63 @@ static jdsp jd;
 // ce generator aussi
 static wgen gen;
 
-// parametrer le jdsp en fonction des arguments de CLI
-void param_simu( int argc, char ** argv )
+/* ============================ CLI parameters ======================= */
+
+const char * usage = "Options:\n\
+  -F <Sampling frequ. (%g Hz)>\n\
+  -f <center frequ. (%g Hz)>\n\
+Filter-Rectifier Demodulator:\n\
+  -R <linear decay (%g units/sample)\n\
+  -r <ripple filter cutoff ratio> (%g * f)\n\
+Synchronous Demodulator:\n\
+  -L <LP filter cutoff> (%g * f)\n\
+Signal Source:\n\
+  -N <number of chirps on each side of f> (%d)\n\
+  -k <frequency spacing factor> (%g)\n\
+  -d <chirp duration> (%d f-periods)\n\
+  -t <rise and fall time> (%d f-periods)\n\
+  -n <noise relative amount> (%g)\n\
+Notes about bandwidths:\n\
+  * third of octave is 1.25992, sixth of octave is 1.122462\n\
+  * Filter-Rectifier Demodulator has 4th order BP filter,\n\
+    third of octave bandwidth (Q=7.7 for each biquad)\n\
+  * Sync Demodulator has 4th order Butterworth LP filter\n";
+
+static void param_dump()
 {
-printf("usage : \n");
-
-double val;
-gen.Fs = jd.Fs;
-gen.f0 = jd.f0;
-
-printf("\nfreq. centrale f0 = %g Hz\n", jd.f0 );
-printf("freq. ech. fs = %g Hz\n", jd.Fs );
-printf("Async rectifier :\n  rect-decay = %g unit/sample\n", jd.rect_decay );
-printf("  ripple filter ratio = %g\n", jd.rfr );
-printf("Syn demodulator low pass:\n  kflp = %g\n", jd.kflp );
-printf("Signal generator :\n  bruit/sin = %g\n", gen.knoise );
-printf("  Facteur de serie de progression de frequence = %g\n", gen.kdf );
-printf("  Duree de salve = %d periodes de f0\n", gen.tpu );
-printf("  Temps de montee et descente = %d periodes de f0\n\n", gen.trtf );
+printf( usage, jd.Fs, jd.f0, jd.rect_decay, jd.krif, jd.kflp, gen.qpu, gen.kdf, gen.tpu, gen.trtf, gen.knoise );
 fflush( stdout );
 }
+
+// parametrer le jdsp en fonction des arguments de CLI
+static void param_input( int argc, char ** argv )
+{
+// 	parsing CLI arguments
+cli_parse * lepar = new cli_parse( argc, (const char **)argv, "FfRrLNkdtn" );
+// parsing is done, retrieve the args
+const char * val;
+
+if ( ( val = lepar->get('F') ) ) jd.Fs = strtod( val, NULL ); 
+if ( ( val = lepar->get('f') ) ) jd.f0 = strtod( val, NULL ); 
+if ( ( val = lepar->get('R') ) ) jd.rect_decay = strtod( val, NULL ); 
+if ( ( val = lepar->get('r') ) ) jd.krif = strtod( val, NULL ); 
+if ( ( val = lepar->get('L') ) ) jd.kflp = strtod( val, NULL ); 
+
+if ( ( val = lepar->get('N') ) ) gen.qpu = atoi( val ); 
+if ( ( val = lepar->get('k') ) ) gen.kdf = strtod( val, NULL ); 
+if ( ( val = lepar->get('d') ) ) gen.tpu = atoi( val ); 
+if ( ( val = lepar->get('t') ) ) gen.trtf = atoi( val ); 
+if ( ( val = lepar->get('n') ) ) gen.knoise = strtod( val, NULL );
+
+if	( lepar->get('h') || lepar->get('@') )
+	{ param_dump(); exit(0); }
+
+gen.Fs = jd.Fs;
+gen.f0 = jd.f0;
+param_dump();
+}
+
+/* ============================ ACTION ======================= */
 
 // simu pour le l'affichage de waves
 void run_simu()
@@ -65,40 +102,42 @@ void run_simu()
 // d'abord evaluer la taille
 int qsamples = gen.calc_size();
 // allouer la memoire
-layer_u<float> * w[QWAVES];
-
 for	( int iw = 0; iw < QWAVES; ++iw )
 	{
-	w[iw] = &demowave[iw];
-	w[iw]->V = (float *)malloc( qsamples * sizeof(float) );
-	w[iw]->qu = qsamples;
-	if	( w[iw]->V == NULL )
+	demowave[iw].V = (float *)malloc( qsamples * sizeof(float) );
+	demowave[iw].qu = qsamples;
+	if	( demowave[iw].V == NULL )
 		{
 		printf("echec malloc %d samples\n", qsamples );
 		exit( 1 );
 		}
 	}
-printf("allocated %d * %d samples\n", QWAVES, w[0]->qu );
+printf("allocated %d * %d samples\n", QWAVES, qsamples );
 
 // actionner le generateur
+gen.Fs = jd.Fs;
 gen.f0 = jd.f0;
-gen.generate( w[0]->V );
+gen.generate( demowave[0].V );
 
 // initialiser les composants du jdsp
 jd.update();
 
 // boucle de calcul DSP
-for	( int i = 0; i < w[0]->qu; ++i )
+float * V0 = demowave[0].V;
+float * V1 = demowave[1].V;
+float * V2 = demowave[2].V;
+
+for	( int i = 0; i < qsamples; ++i )
 	{
-	w[3]->V[i] = jd.canal_step( w[0]->V[i] ) * 1.6;	// normalisation empirique (depend de rect. decay)
-	w[2]->V[i] = jd.demod_step( w[0]->V[i] ) * 2.0;	// normalisation theorique
+	V1[i] = jd.canal_step( V0[i] ) * 1.6;	// normalisation empirique (depend de rect. decay)
+	V2[i] = jd.demod_step( V0[i] ) * 2.0;	// normalisation theorique
 	}
 
 printf("simulation done\n"); fflush(stdout);
 // preparation plot
-w[0]->scan();
-w[2]->scan();
-w[3]->scan();
+demowave[0].scan();
+demowave[1].scan();
+demowave[2].scan();
 }
 
 // 1 strip avec N courbes
@@ -124,7 +163,7 @@ layer_u<float> * curcour;
 
 // referencer un layer
 // curcour = new layer_u<float>;  // bah non on a cree les layers en static global
-curcour = &demowave[3];
+curcour = &demowave[1];
 curbande->add_layer( curcour, "ripp_out" );
 // configurer ce layer (APRES add_layer)
 curcour->fgcolor.arc_en_ciel( 2 );
@@ -140,7 +179,7 @@ curbande->add_layer( curcour, "input" );
 curcour->fgcolor.arc_en_ciel( 3 );
 }
 
-/** ============================ call backs ======================= */
+/* ============================ call backs ======================= */
 
 int idle_call( glostru * glo )
 {
@@ -176,7 +215,7 @@ else	glo->panneau1.pdf_modal_layout( glo->wmain );
 }
 
 
-/** ============================ GLUPLOT call backs =============== */
+/* ============================ GLUPLOT call backs =============== */
 
 void clic_call_back( double M, double N, void * vglo )
 {
@@ -218,7 +257,7 @@ switch	( v )
 	}
 }
 
-/** ============================ context menus ======================= */
+/* ============================ context menus ======================= */
 
 // call backs
 static void pdf_export_0( GtkWidget *widget, glostru * glo )
@@ -274,7 +313,7 @@ static void pdf_button_call( GtkWidget *widget, glostru * glo )
 glo->panneau1.pdf_modal_layout( glo->wmain );
 }
 
-/** ============================ constr. GUI ======================= */
+/* ============================ constr. GUI ======================= */
 
 int main( int argc, char *argv[] )
 {
@@ -353,7 +392,7 @@ gtk_widget_show_all( glo->wmain );
 glo->panneau1.clic_callback_register( clic_call_back, (void *)glo );
 glo->panneau1.key_callback_register( key_call_back, (void *)glo );
 
-param_simu( argc, argv );
+param_input( argc, argv );
 run_simu();
 
 prep_layout1( &glo->panneau1 );

@@ -1,4 +1,4 @@
-// testbench : generation de salves d'enveloppe trapezoidale
+// testbench : generation de salves (chirps) d'enveloppe trapezoidale
 class wgen {
 public:
 // parametres
@@ -6,10 +6,10 @@ double Fs;	// frequ. echant.
 double f0;	// frequ. centrale
 double kdf;	// saut relatif de frequence (> 1.0)
 double knoise;	// proportion de bruit
-int tpu;	// duree de pulse et d'intervalles, en periodes de f0
+int tpu;	// duree de chirp et d'intervalles, en periodes de f0
 int trtf;	// temps de montee et descente, en periodes de f0
-int qpu;	// nombre de pulses de part et d'autre de f0
-		// le total sera qpu + 1 + qpu pulses
+int qpu;	// nombre de chirps de part et d'autre de f0
+		// le total sera qpu + 1 + qpu chirps
 /*
 	              ______________
                      /              \                /
@@ -22,16 +22,16 @@ int qpu;	// nombre de pulses de part et d'autre de f0
 	0	  t0                t2
 	          =tpu-2*trtf       =2*tpu-trtf          
 
-- la periode des pulses est 2 * tpu
+- la periode des chirps est 2 * tpu
 - les temps de montee et descente sont pris sur les intyervalles
 */
 
 // variables derivees
 int qsamples;
 int _T0;	// periode de f0 exprimee en Ts, arrondie
-int _tpu;	// duree de pulse, exprimee en Ts
+int _tpu;	// duree de chirp, exprimee en Ts
 int _trtf;	// temps de montee et descente, en Ts
-int _ppu; 	// periode des pulses, exprimee en Ts
+int _ppu; 	// periode des chirps, exprimee en Ts
 
 // constructeur
 wgen() {
@@ -71,7 +71,7 @@ void generate( float * fbuf ) {
 	// boucle de calcul generation signal
 	for	( int i = 0; i < qsamples; ++i )
 		{
-		// generation enveloppe d'une pulse periodique, periode _ppu samples
+		// generation enveloppe d'un chirp periodique, periode _ppu samples
 		_t = i % _ppu;
 		if	( _t < _t0 )	// silence
 			gen_env = 0.0;

@@ -29,7 +29,7 @@ static glostru theglo;
 
 /* ============================ static DATA ======================= */
 
-#define QWAVES 3
+#define QWAVES 4
 static layer_u<float> demowave[QWAVES];	// wave type float a pas uniforme
 
 // ce jdsp est l'objet singleton de cette appli
@@ -149,23 +149,26 @@ for	( int iw = 0; iw < QWAVES; ++iw )
 	}
 printf("allocated %d * %d samples\n", QWAVES, qsamples );
 
+float * V0 = demowave[0].V;
+float * V1 = demowave[1].V;
+float * V2 = demowave[2].V;
+float * V3 = demowave[3].V;
+
 // actionner le generateur
 gen.Fs = jd.Fs;
 gen.f0 = jd.f0;
-gen.generate( demowave[0].V );
+gen.generate( V0 );
 
 // initialiser les composants du jdsp
 jd.update();
 
 // boucle de calcul DSP
-float * V0 = demowave[0].V;
-float * V1 = demowave[1].V;
-float * V2 = demowave[2].V;
 
 for	( int i = 0; i < qsamples; ++i )
 	{
-	V1[i] = jd.canal_step( V0[i] ) * 1.6;	// normalisation empirique (depend de rect. decay)
-	V2[i] = jd.demod_step( V0[i] ) * 2.0;	// normalisation theorique
+	V1[i] = jd.canal.step( V0[i] ) * 1.6;		// normalisation empirique (depend de rect. decay)
+	V2[i] = jd.demod.step_env( V0[i] ) * 2.0;	// normalisation theorique
+	V3[i] = jd.demod.step_filt( V0[i] ) * 2.0;	// normalisation theorique
 	}
 
 printf("simulation done\n"); fflush(stdout);
@@ -173,6 +176,7 @@ printf("simulation done\n"); fflush(stdout);
 demowave[0].scan();
 demowave[1].scan();
 demowave[2].scan();
+demowave[3].scan();
 }
 
 // 1 strip avec N courbes
@@ -198,6 +202,11 @@ layer_u<float> * curcour;
 
 // referencer un layer
 // curcour = new layer_u<float>;  // bah non on a cree les layers en static global
+curcour = &demowave[0];
+curbande->add_layer( curcour, "input" );
+// configurer ce layer (APRES add_layer)
+curcour->fgcolor.arc_en_ciel( 3 );
+
 curcour = &demowave[1];
 curbande->add_layer( curcour, "ripp_out" );
 // configurer ce layer (APRES add_layer)
@@ -208,10 +217,10 @@ curbande->add_layer( curcour, "demod_out" );
 // configurer ce layer (APRES add_layer)
 curcour->fgcolor.arc_en_ciel( 6 );
 
-curcour = &demowave[0];
-curbande->add_layer( curcour, "input" );
+curcour = &demowave[3];
+curbande->add_layer( curcour, "filter" );
 // configurer ce layer (APRES add_layer)
-curcour->fgcolor.arc_en_ciel( 3 );
+curcour->fgcolor.arc_en_ciel( 5 );
 }
 
 /* ============================ call backs ======================= */

@@ -93,18 +93,23 @@ class demod4 {
 public :
 // osc local
 double k;	// frequence en rad/sample
-double phase;	// phase courante
+double Ephase;	// phase courante
+double Fphase;	// phase courante
 // filtres passe-bas
 //filt4 LPr;
 //filt4 LPi;
-filt3 LPr;
-filt3 LPi;
+filt3 ELPr;
+filt3 ELPi;
+filt3 FLPr;
+filt3 FLPi;
 //filt2 LPr;
 //filt2 LPi;
 // methode init
 void init( double rel_fo, double rel_flp );
-// methode : traiter un echantillon par demodulateur synchrone
-double step( double X );
+// methode : calculer un echantillon d'enveloppe par demodulateur synchrone
+double step_env( double X );
+// methode : calculer un echantillon par filtrage synchrone
+double step_filt( double X );
 };
 
 
@@ -150,11 +155,4 @@ void update() {			// mise a jour des parametres deduits
 	canal.init( f0 / Fs, rect_decay, krif );
 	demod.init( f0d / Fs, ( f0d / Fs ) * kflp  );
 	};
-// methodes : traiter 1 echantillon
-double canal_step( double X ) {
-	return canal.step(X);
-	}
-double demod_step( double X ) {
-	return demod.step(X);
-	}
 };

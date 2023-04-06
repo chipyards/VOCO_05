@@ -190,27 +190,50 @@ return fabs(Y);
 //	rel_flp en turn/sample
 void demod4::init( double rel_fo, double rel_flp )
 {
-// filtre passe-bas
-LPr.initLP( rel_flp );
-LPi.initLP( rel_flp );
+// filtres passe-bas
+ELPr.initLP( rel_flp );
+ELPi.initLP( rel_flp );
+FLPr.initLP( rel_flp );
+FLPi.initLP( rel_flp );
 k = 2.0 * M_PI * rel_fo;
-phase = 0.0;
+Ephase = 0.0;
+Fphase = 0.0;
 }
 
 // traiter un echantillon par demodulateur synchrone
-double demod4::step( double X )
+double demod4::step_env( double X )
 {
-double Reel, Img;
+double OscR, OscI, Reel, Img;
 // oscillateur
-Reel = cos( phase );
-Img  = sin( phase );
-phase += k;
+OscR = cos( Ephase );
+OscI = sin( Ephase );
+Ephase += k;
 // modulation
-Reel *= X;
-Img *= X;
+Reel = OscR * X;
+Img  = OscI * X;
 // filtrage
-Reel = LPr.LP_step( Reel );
-Img  = LPi.LP_step( Img );
+Reel = ELPr.LP_step( Reel );
+Img  = ELPi.LP_step( Img );
 // module
 return sqrt( Reel * Reel + Img * Img );
+}
+
+// traiter un echantillon par filtrage synchrone
+double demod4::step_filt( double X )
+{
+double OscR, OscI, Reel, Img;
+// oscillateur
+OscR = cos( Fphase );
+OscI = sin( Fphase );
+Fphase += k;
+// modulation
+Reel = OscR * X;
+Img  = OscI * X;
+// filtrage
+Reel = FLPr.LP_step( Reel );
+Img  = FLPi.LP_step( Img );
+// demodulation : partie reelle du produit
+Reel *= OscR;
+Img  *= OscI;
+return ( Reel + Img );
 }

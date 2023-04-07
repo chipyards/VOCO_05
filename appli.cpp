@@ -29,6 +29,9 @@ static glostru theglo;
 
 /* ============================ static DATA ======================= */
 
+// options
+bool opt_dB = false;
+
 #define QWAVES 4
 static layer_u<float> demowave[QWAVES];	// wave type float a pas uniforme
 
@@ -48,7 +51,9 @@ Filter-Rectifier Demodulator:\n\
 Synchronous Demodulator:\n\
   -L <LP filter cutoff> (%g * f)\n\
 Signal Source Mode:\n\
-  -M <mode : c (chirps) or s (steps)> (%s)\n";
+  -M <mode : c (chirps) or s (steps)> (%s)\n\
+Display options:\n\
+  -B : vertical axis in dB\n";
 
 const char * options_c = "\
 Signal Source in Chirps mode:\n\
@@ -102,6 +107,7 @@ if ( ( val = lepar->get('r') ) ) jd.krif = strtod( val, NULL );
 if ( ( val = lepar->get('L') ) ) jd.kflp = strtod( val, NULL ); 
 
 if ( ( val = lepar->get('M') ) ) gen.mode = val[0]; 
+opt_dB = ( lepar->get('B') );
 
 if	( gen.mode == 'c' )
 	{
@@ -172,15 +178,10 @@ for	( int i = 0; i < qsamples; ++i )
 	}
 
 printf("simulation done\n"); fflush(stdout);
-// preparation plot
-demowave[0].scan();
-demowave[1].scan();
-demowave[2].scan();
-demowave[3].scan();
 }
 
 // 1 strip avec N courbes
-void prep_layout1( gpanel * panneau1 )
+void prep_layout1( gpanel * panneau1, int opt_dB )
 {
 // marge pour les textes
 // panneau1.mx = 60;
@@ -200,27 +201,49 @@ curbande->subtk = 2;
 // creer un pointeur pour le layer courant
 layer_u<float> * curcour;
 
-// referencer un layer
-// curcour = new layer_u<float>;  // bah non on a cree les layers en static global
-curcour = &demowave[0];
-curbande->add_layer( curcour, "input" );
-// configurer ce layer (APRES add_layer)
-curcour->fgcolor.arc_en_ciel( 3 );
+if	( !opt_dB )
+	{
+	// referencer un layer
+	// curcour = new layer_u<float>;  // bah non on a cree les layers en static global
+	curcour = &demowave[0];
+	curbande->add_layer( curcour, "input" );
+	// configurer ce layer (APRES add_layer)
+	curcour->fgcolor.arc_en_ciel( 3 );
+	curcour->scan();	// alors seulement on peut faire un scan
+	}
 
 curcour = &demowave[1];
 curbande->add_layer( curcour, "ripp_out" );
 // configurer ce layer (APRES add_layer)
 curcour->fgcolor.arc_en_ciel( 2 );
+if	( opt_dB )
+	{
+	curcour->style = 2;
+	curcour->k0dB = 1.0;
+	curcour->Vfloor = 1e-3;
+	}
+curcour->scan();		// alors seulement on peut faire un scan
 
 curcour = &demowave[2];
 curbande->add_layer( curcour, "demod_out" );
 // configurer ce layer (APRES add_layer)
 curcour->fgcolor.arc_en_ciel( 6 );
+if	( opt_dB )
+	{
+	curcour->style = 2;
+	curcour->k0dB = 1.0;
+	curcour->Vfloor = 1e-3;
+	}
+curcour->scan();		// alors seulement on peut faire un scan
 
-curcour = &demowave[3];
-curbande->add_layer( curcour, "filter" );
-// configurer ce layer (APRES add_layer)
-curcour->fgcolor.arc_en_ciel( 5 );
+if	( !opt_dB )
+	{
+	curcour = &demowave[3];
+	curbande->add_layer( curcour, "filter" );
+	// configurer ce layer (APRES add_layer)
+	curcour->fgcolor.arc_en_ciel( 5 );
+	curcour->scan();	// alors seulement on peut faire un scan
+	}
 }
 
 /* ============================ call backs ======================= */
@@ -439,7 +462,7 @@ glo->panneau1.key_callback_register( key_call_back, (void *)glo );
 param_input( argc, argv );
 run_simu();
 
-prep_layout1( &glo->panneau1 );
+prep_layout1( &glo->panneau1, opt_dB );
 // glo->panneau1.dump();
 
 // enrichissement du menu global du panel

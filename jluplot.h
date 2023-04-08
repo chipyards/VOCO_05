@@ -268,6 +268,7 @@ unsigned int mx;	// marge x pour les textes a gauche (pixels)
 			// sert a translater le repere pour trace des courbes
 unsigned int my;	// marge pour les textes de l'axe X (pixels)
 unsigned int pdf_DPI;	// conversion des pixels t.q. pdf_DPI = 72 <==> 1 pix = 1 point
+int optLog10;		// graduation log style Bode ( en fait c'est Q qui est le log de la frequence )
 
 // zoombar X optionnelle
 void * zoombar;		// pointeur sur l'objet, a passer a la callback
@@ -276,7 +277,7 @@ void(* zbarcall)(void*, double, double); 	// callback de zoom normalise
 // constructeur
 panel() : x0(0.0), kx(1.0), q0(0.0), kq(1.0),
 	  tdq(10.0), qtkx(11), full_valid(0), force_redraw(1),
-	  fdx(200), fdy(200), mx(60), my(20), pdf_DPI(72),
+	  fdx(200), fdy(200), mx(60), my(20), pdf_DPI(72), optLog10(0),
 	  zbarcall(NULL)
 	  { ndx = fdx - mx; };
 // methodes

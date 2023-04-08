@@ -28,7 +28,7 @@ int qpu;	// nombre de chirps de part et d'autre de f0
 - les temps de montee et descente sont pris sur les intervalles
 */
 // steps mode
-int qstep;	// nombre de paliers de frequence
+int qstep;	// nombre de paliers de frequence de chaque cote de f0
 int spo;	// nombre de paliers par octave
 int tstep;	// duree de palier, en periodes de f0
 // variables derivees
@@ -43,7 +43,7 @@ int _tstep;	// duree de palier, en Ts
 wgen() {
 	Fs = 48000.0;
 	f0 = 500.0;
-	mode = 'c';
+	mode = 's';
 	kdf = SIXIEME_OCTAVE;	// pow( 2.0, 1/6.0 );
 	knoise = 0.0;
 	// durees exprimees en periodes T0 = 1/f0
@@ -52,9 +52,9 @@ wgen() {
 	// quantites
 	qpu = 2;
 	qsamples = 0;
-	qstep = 10;
-	spo = 10;
-	tstep = 20;
+	qstep = 400;	// 4 octaves de chaque cote
+	spo = 100;
+	tstep = 1;
 	};
 int calc_size() {
 	_T0 = (int)ceil( Fs / f0 );

@@ -272,20 +272,54 @@ cairo_set_source_rgb( cai, 1, 1, 1 );
 cairo_rectangle( cai, -parent->mx, 0, parent->fdx, fdy - ndy );
 cairo_fill( cai );
 cairo_set_source_rgb( cai, 0, 0, 0 );
-double curq = parent->tdq * ceil( parent->QdeM( parent->MdeX( 0 ) ) / parent->tdq );
-double curx = parent->XdeM(parent->MdeQ(curq));		// la transformation
-// preparation format selon premier point
-scientout( lbuf, curq, parent->tdq );
-while	( curx < parent->ndx )
-	{
-	scientout( lbuf, curq );
-	cairo_move_to( cai, curx - 20, 15 );
-	cairo_show_text( cai, lbuf );
-	cairo_move_to( cai, curx, 0.0 );	// top
-	cairo_line_to( cai, curx, 3.0 ); 	// bottom
-	cairo_stroke( cai );
-	curq += parent->tdq;
-	curx = parent->XdeM(parent->MdeQ(curq));	// la transformation
+if	( parent->optLog10 == 0 )
+	{				// ECHELLE LINEAIRE (normale)
+	double curq = parent->tdq * ceil( parent->QdeM( parent->MdeX( 0 ) ) / parent->tdq );
+	double curx = parent->XdeM(parent->MdeQ(curq));
+	// preparation format selon premier point
+	scientout( lbuf, curq, parent->tdq );
+	while	( curx < parent->ndx )
+		{
+		scientout( lbuf, curq );
+		cairo_move_to( cai, curx - 20, 15 );
+		cairo_show_text( cai, lbuf );
+		cairo_move_to( cai, curx, 0.0 );	// top
+		cairo_line_to( cai, curx, 3.0 ); 	// bottom
+		cairo_stroke( cai );
+		curq += parent->tdq;
+		curx = parent->XdeM(parent->MdeQ(curq));	// la transformation
+		}
+	}
+else	{				// ECHELLE LOG STYLE BODE
+	// puissance de 10 immediatement inferieure ou egale au bord gauche
+	double curq, iq = floor( parent->QdeM(parent->MdeX(0)) );
+	double curx = parent->XdeM(parent->MdeQ(iq));
+	// printf("gradu_X: start %g\n", pow( 10, iq ) ); fflush(stdout);
+	while	( curx < parent->ndx )
+		{
+		if	( curx >= 0 )	// texte pour puissance de 10
+			{
+			// scientout( lbuf, pow( 10, iq ) );
+			snprintf( lbuf, sizeof(lbuf), "%g", pow( 10, iq ) );
+			cairo_move_to( cai, curx - 20, 15 );
+			cairo_show_text( cai, lbuf );
+			}
+		for	( int j = 1; j < 10; j++ )	// 9 ticks pour 1 decade
+			{
+			curq = iq + log10(double(j));
+			curx = parent->XdeM(parent->MdeQ(curq));	// la transformation
+			if	( curx >= parent->ndx )
+				break;
+			if	( curx >= 0 )
+				{
+				cairo_move_to( cai, curx, 0.0 );	// top
+				cairo_line_to( cai, curx, 3.0 ); 	// bottom
+				cairo_stroke( cai );
+				}
+			}
+		iq += 1.0;
+		curx = parent->XdeM(parent->MdeQ(iq));
+		}
 	}
 }
 

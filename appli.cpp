@@ -180,16 +180,6 @@ for	( int i = 0; i < qsamples; ++i )
 printf("simulation done\n"); fflush(stdout);
 }
 
-// fonction a rapatrier dans la classe panel
-void logscale_helper( panel * curpan, double fstart, double fref, double mref )
-{
-double q0 = log10( fstart );
-double kq = mref / ( log10( fref ) - q0 );
-curpan->q0 = q0;
-curpan->kq = kq;
-curpan->optLog10 = 1;
-}
-
 // 1 strip avec N courbes
 void prep_layout1( gpanel * panneau1, int opt_dB )
 {
@@ -215,7 +205,7 @@ if	( ( gen.mode == 's' ) && ( gen.tstep == 1 ) )
 	fref = gen.f0;
 	mref = double( gen.qstep * gen.tstep ) * gen.Fs / gen.f0;
 	printf("fstart = %g, fref = %g, mref = %g\n", fstart, fref, mref ); fflush(stdout);
-	logscale_helper( panneau1, fstart, fref, mref );
+	panneau1->logscale_helper( fstart, fref, mref );
 	}
 
 // creer un pointeur pour le layer courant

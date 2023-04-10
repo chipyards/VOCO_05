@@ -291,12 +291,15 @@ void set_x0( double X0 );
 void set_kx( double kX );
 double get_x0() { return x0; };
 double get_kx() { return kx; };
-
+void logscale_helper( double fstart, double fref, double mref ) {
+	q0 = log10( fstart );
+	kq = mref / ( log10( fref ) - q0 );
+	optLog10 = 1;
+	};
 void add_strip( strip * labande ) {
-labande->parent = this;
-bandes.push_back( labande );
-}
-
+	labande->parent = this;
+	bandes.push_back( labande );
+	};
 // dessin
 void zoomM( double mmin, double mmax );	// zoom absolu
 void zoomX( double xmin, double xmax );	// zoom relatif

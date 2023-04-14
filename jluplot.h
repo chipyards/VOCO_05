@@ -17,7 +17,7 @@
 	dans un strip : vector < layer_base * > courbes;
 	dans un panel : vector < strip * > bandes;
    classes de base :
-	layer_base est abstraite - les layers operationnels sont definis dans l'unite layer.h
+	layer_base est abstraite - les layers operationnels sont definis dans des unites layer_xx.h
 	strip est operationnelle
 
 1) contexte graphique
@@ -69,12 +69,37 @@
 	- chaque layer derive peut implementer une methode scan() pour mettre a jour ses min et max,
 	  a charge pour l'application de l'appeler quand les data sont mises a jour
 
+4) Densite des ticks (graduations et reticules)
+	- le nombre total de ticks depend de strip::qtky et panel::qtkx
+	  l'ajustement en fonction des pixels disponibles est a charge de l'appli,
+	  jluplot ne le fait pas automatiquement (sauf partiellement pour echelle log)
+	- les subticks sont traces sur le reticule seulement, leur densite (en X et Y)
+	  relative aux ticks depend de strip::subtk que l'appli peut ajuster
+
 4) PDF plot
 	- la methode pdfplot( fnam, caption ) modifie le contexte :
 		- pour les elements fixes en pixels : pdf_DPI = 72 ==> 1 pixel -> 1 pt ( 0.353 mm )
 		- format A4 landscape (@ pdf_DPI = 72), indep. de la taille de fenetre
 		- fond transparent (optcadre = 1)
 	  elle restitue le contexte au retour.
+
+5) echelles log style "Bode Plot"
+	- echelle verticale t.q. dB
+		- c'est a la charge du layer, par exemple layer_u avec style=2 :
+			- les data sont lineaires t.q. module de fonction de transfert ou de signal reel
+			- le layer effectue la conversion "20*log10(v)" sur chaque valeur de V,
+			  en positionnant le 0dB selon parametre k0dB et en limitant les dB negatifs
+			  selon plancher Vfloor
+		- le strip gere une graduation lineaire uniforme, il n'est pas au courant
+	- echelle horizontale de frequence dite "echelle log"
+		- repose sur une collaboration entre la source de data et l'affichage:
+		  ne fonctionne que si les data sont generees en progression exponentielle,
+		  pour le layer elles ont un pas uniforme, U = indice des chaque sample
+		  c'est a dire que U est proportionnel au log de la "frequence" (M aussi)
+		- le layer (par exemple layer_u) n'est pas au courant de "l'echelle log"
+		- c'est au panel de produire des graduations X et un reticule non uniformes
+		  permettant de lire directement la frequence
+		- ce comportement se configure avec panel::logscale_helper() (ci dessous)
 */
 class panel;
 class strip;
@@ -291,11 +316,6 @@ void set_x0( double X0 );
 void set_kx( double kX );
 double get_x0() { return x0; };
 double get_kx() { return kx; };
-void logscale_helper( double fstart, double fref, double mref ) {
-	q0 = log10( fstart );
-	kq = mref / ( log10( fref ) - q0 );
-	optLog10 = 1;
-	};
 void add_strip( strip * labande ) {
 	labande->parent = this;
 	bandes.push_back( labande );
@@ -311,6 +331,12 @@ void fullMN();
 void presize( int redx, int redy );	// met a jour les dimensions en pixels
 void resize( int redx, int redy );	// met a jour les dimensions en pixels puis les zooms
 void draw( cairo_t * cai );
+void logscale_helper( double fstart, double fref, double mref ) {
+	q0 = log10( fstart );
+	kq = mref / ( log10( fref ) - q0 );
+	optLog10 = 1;
+	};
+void bode_log_scale(  cairo_t * cai, bool gradu, double ytop, double ybot );
 // event
 int clicXY( double x, double y, double * px, double * py );
 int clicMN( double x, double y, double * pM, double * pN );

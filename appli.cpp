@@ -30,7 +30,7 @@ static glostru theglo;
 /* ============================ static DATA ======================= */
 
 // options
-bool opt_dB = false;
+bool opt_dB = true;
 
 #define QWAVES 4
 static layer_u<float> demowave[QWAVES];	// wave type float a pas uniforme
@@ -53,7 +53,7 @@ Synchronous Demodulator:\n\
 Signal Source Mode:\n\
   -M <mode : c (chirps) or s (steps)> (%s)\n\
 Display options:\n\
-  -B : vertical axis in dB\n";
+  -B <0|1> vertical axis in dB\n";
 
 const char * options_c = "\
 Signal Source in Chirps mode:\n\
@@ -96,7 +96,7 @@ fflush( stdout );
 static void param_input( int argc, char ** argv )
 {
 // 	parsing CLI arguments
-cli_parse * lepar = new cli_parse( argc, (const char **)argv, "FfRrLNkdtnMS" );
+cli_parse * lepar = new cli_parse( argc, (const char **)argv, "FfRrLNkdtnMBS" );
 // parsing is done, retrieve the args
 const char * val;
 
@@ -107,7 +107,7 @@ if ( ( val = lepar->get('r') ) ) jd.krif = strtod( val, NULL );
 if ( ( val = lepar->get('L') ) ) jd.kflp = strtod( val, NULL ); 
 
 if ( ( val = lepar->get('M') ) ) gen.mode = val[0]; 
-opt_dB = ( lepar->get('B') );
+if ( ( val = lepar->get('B') ) ) opt_dB = atoi( val );
 
 if	( gen.mode == 'c' )
 	{
@@ -185,7 +185,7 @@ void prep_layout1( gpanel * panneau1, int opt_dB )
 {
 // marge pour les textes
 // panneau1.mx = 60;
-panneau1->offscreen_flag = 0;
+panneau1->offscreen_flag = 1;
 
 // creer le strip pour les waves
 gstrip * curbande;
@@ -201,7 +201,7 @@ curbande->subtk = 2;
 if	( ( gen.mode == 's' ) && ( gen.tstep == 1 ) )
 	{
 	double fstart, fref, mref;
-	fstart = gen.f0 * pow( 0.5, gen.qstep/gen.spo );
+	fstart = gen.f0 * pow( 0.5, double(gen.qstep)/double(gen.spo) );
 	fref = gen.f0;
 	mref = double( gen.qstep * gen.tstep ) * gen.Fs / gen.f0;
 	printf("fstart = %g, fref = %g, mref = %g\n", fstart, fref, mref ); fflush(stdout);

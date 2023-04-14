@@ -52,8 +52,8 @@ wgen() {
 	// quantites
 	qpu = 2;
 	qsamples = 0;
-	qstep = 400;	// 4 octaves de chaque cote
-	spo = 100;
+	qstep = 12000;	// 3/2 octaves de chaque cote
+	spo = 8000;
 	tstep = 1;
 	};
 int calc_size() {
@@ -134,8 +134,8 @@ void generate( float * fbuf ) {
 				// convertir la frequence en rad/sample
 				w = ( M_PI * 2.0 ) * f / Fs;
 				}
-			if	( _t == _t1 ) 
-				printf("step %d %d, f=%g Hz\n", (i/_tstep), i, f );
+			//if	( _t == _t1 ) 
+			//	printf("step %d %d, f=%g Hz\n", (i/_tstep), i, f );
 			gen_sig = cos( phase );
 			phase += w;
 			if	( phase > ( M_PI * 2.0 ) )
